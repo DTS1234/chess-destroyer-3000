@@ -32,7 +32,7 @@ class Board {
     }
 
     fun shortCastle() {
-        val isBlack = moves.size % 2 == 0
+        val isBlack = moves.size % 2 != 0
         if (isBlack) {
             val kingSquare = findSquare("e8")
             val rookSquare = findSquare("h8")

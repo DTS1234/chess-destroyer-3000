@@ -18,6 +18,26 @@ import kotlin.test.assertTrue
 @DisplayNameGeneration(ReplaceUnderscores::class)
 class ChessEngineTest {
 
+
+
+    @Test
+    fun should_evaluate_castled_king() {
+        val chesEngine = ChessEngine()
+        val b = Board()
+
+        b.move(Move("e2e4"))//w
+        b.move(Move("e7e5"))//b
+        b.move(Move("f1e2"))//w
+        b.move(Move("f8e7"))//b
+        b.move(Move("g1f3"))//w
+        b.move(Move("a7a6"))//b
+        b.move(Move("O-O"))//w
+
+        printBoard(b)
+
+        assertEquals(actual = chesEngine.evaluate(b, Color.WHITE, 1), expected =  10)
+    }
+
     @Test
     fun should_evaluate_checkmate_black() {
         val chesEngine = ChessEngine()

@@ -16,11 +16,24 @@ import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 @DisplayNameGeneration(ReplaceUnderscores::class)
 class BoardTest {
+
+    @Test
+    fun should_not_allow_long_castle() {
+        val fen = "r1b1kb1r/p3p2p/n2p4/1pp2pp1/8/2PPBP2/PP1NB1PR/R3K1N1 b kq - 1 12"
+        val board = Board()
+        board.fromFEN(fen)
+
+        val moveFinder = MoveFinder()
+        val moves = moveFinder.findMoves(Color.BLACK, board, "e8")
+
+        assertTrue(!moves.contains(Move("O-O-O")))
+    }
 
     @Test
     fun should_create_from_FEN() {

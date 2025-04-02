@@ -118,7 +118,7 @@ class KingMoveFinder {
             return isEmpty
         } else {
             val isEmpty = board.findSquare("b8")?.isEmpty() == true &&
-                    board.findSquare("g8")?.isEmpty() == true &&
+                    board.findSquare("c8")?.isEmpty() == true &&
                     board.findSquare("d8")?.isEmpty() == true
             return isEmpty
         }

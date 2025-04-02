@@ -4,6 +4,9 @@ import adam.backend.portfolio.finder.MoveFinder
 import adam.backend.portfolio.model.Board
 import adam.backend.portfolio.model.Color
 import adam.backend.portfolio.model.Move
+import adam.backend.portfolio.model.Pawn
+import adam.backend.portfolio.model.Rook
+import adam.backend.portfolio.model.Square
 
 class ChessEngine {
 
@@ -114,6 +117,109 @@ class ChessEngine {
             eval += 10
         }
 
+        eval = addForCastling(eval, board, maximizingColor)
+        eval = punishEarlyQueenMoves(eval, board, maximizingColor)
+        eval = rewardEarlyLightPiecesDevelopment(eval, board, maximizingColor)
+        eval = rewardCenterTakeOvers(eval, board, maximizingColor)
+
         return if (maximizingColor == Color.WHITE) eval else -eval
+    }
+
+    private fun rewardCenterTakeOvers(eval: Int, board: Board, maximizingColor: Color): Int {
+        var newEval = eval
+        val center = listOf("e4", "e5", "d4", "d5")
+        for (square in center) {
+            if (board.isAttacked(Square(square, null), maximizingColor)) {
+                newEval += 1
+            }
+        }
+        return newEval
+    }
+
+    private fun rewardEarlyLightPiecesDevelopment(eval: Int, board: Board, maximizingColor: Color): Int {
+        if (maximizingColor == Color.WHITE) {
+            if (board.findSquare("b1")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("c1")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("f1")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("g1")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+        } else {
+            if (board.findSquare("b8")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("c8")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("f8")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+            if (board.findSquare("g8")?.isEmpty() == true && board.moves.size < 8) {
+                return eval + 1
+            }
+        }
+        return eval
+    }
+
+    private fun punishEarlyQueenMoves(eval: Int, board: Board, maximizingColor: Color): Int {
+        if (maximizingColor == Color.WHITE) {
+            if (board.findSquare("d1")?.isEmpty() == true && board.moves.size < 8) {
+                return eval - 1
+            }
+        } else {
+            if (board.findSquare("d8")?.isEmpty() == true && board.moves.size < 8) {
+                return eval - 1
+            }
+        }
+        return eval
+    }
+
+    private fun addForCastling(eval: Int, board: Board, maximizingColor: Color): Int {
+        if (maximizingColor == Color.WHITE) {
+            val kingSquare = board.findKing(maximizingColor)
+            if (kingSquare?.value == "g1" && board.findSquare("f1")?.piece == Rook(Color.WHITE)) {
+                if (board.findSquare("f2")?.piece == Pawn(Color.WHITE) && board.findSquare("g2")?.piece == Pawn(Color.WHITE)) {
+                    return eval + 10
+                } else {
+                    return eval + 5
+                }
+            }
+        } else {
+            val kingSquare = board.findKing(maximizingColor)
+            if (kingSquare?.value == "g8" && board.findSquare("f8")?.piece == Rook(Color.BLACK)) {
+                if (board.findSquare("f7")?.piece == Pawn(Color.BLACK) && board.findSquare("g8")?.piece == Pawn(Color.BLACK)) {
+                    return eval + 10
+                } else {
+                    return eval + 5
+                }
+            }
+        }
+
+        if (maximizingColor == Color.WHITE) {
+            val kingSquare = board.findKing(maximizingColor)
+            if (kingSquare?.value == "c1" && board.findSquare("d1")?.piece == Rook(Color.WHITE)) {
+                if (board.findSquare("c2")?.piece == Pawn(Color.WHITE) && board.findSquare("d2")?.piece == Pawn(Color.WHITE)) {
+                    return eval + 5
+                } else {
+                    return eval + 3
+                }
+            }
+        } else {
+            val kingSquare = board.findKing(maximizingColor)
+            if (kingSquare?.value == "c8" && board.findSquare("d8")?.piece == Rook(Color.BLACK)) {
+                if (board.findSquare("c7")?.piece == Pawn(Color.BLACK) && board.findSquare("d7")?.piece == Pawn(Color.BLACK)) {
+                    return eval + 5
+                } else {
+                    return eval + 3
+                }
+            }
+        }
+        return eval
     }
 }
