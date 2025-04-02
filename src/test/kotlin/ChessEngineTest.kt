@@ -11,14 +11,24 @@ import adam.backend.portfolio.printBoard
 import org.junit.jupiter.api.DisplayNameGeneration
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores
 import org.junit.jupiter.api.Test
-import kotlin.math.min
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @DisplayNameGeneration(ReplaceUnderscores::class)
 class ChessEngineTest {
 
+    @Test
+    fun should_punish_early_queen_moves() {
+        val chesEngine = ChessEngine()
+        val b = Board()
 
+        b.move(Move("e2e3"))//w
+        b.move(Move("e7e5"))//b
+        b.move(Move("d1e2"))//w
+
+        val evaluate = chesEngine.evaluate(b, maximizingColor = Color.WHITE, 3)
+        assertEquals(expected = -2, actual = evaluate)
+    }
 
     @Test
     fun should_evaluate_castled_king() {
@@ -35,7 +45,7 @@ class ChessEngineTest {
 
         printBoard(b)
 
-        assertEquals(actual = chesEngine.evaluate(b, Color.WHITE, 1), expected =  10)
+        assertEquals(actual = chesEngine.evaluate(b, Color.WHITE, 1), expected = 10)
     }
 
     @Test
@@ -49,7 +59,7 @@ class ChessEngineTest {
         b.put("a7", Rook(Color.BLACK))
         b.put("h8", King(Color.BLACK))
 
-        assertEquals(actual = chesEngine.evaluate(b, Color.BLACK, 1), expected =  9999)
+        assertEquals(actual = chesEngine.evaluate(b, Color.BLACK, 1), expected = 9999)
     }
 
     @Test

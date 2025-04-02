@@ -12,7 +12,7 @@ class ChessEngine {
 
     private val materialWeightMap: Map<String, Int>
         get() = mapOf(
-            "Q" to 9, "K" to 0, "R" to 5, "B" to 3, "N" to 3, "p" to 1
+            "Q" to 90, "K" to 10000, "R" to 50, "B" to 30, "N" to 30, "p" to 10
         )
 
     fun findBestMove(board: Board, depth: Int, maximizingColor: Color): Move {
@@ -130,7 +130,7 @@ class ChessEngine {
         val center = listOf("e4", "e5", "d4", "d5")
         for (square in center) {
             if (board.isAttacked(Square(square, null), maximizingColor)) {
-                newEval += 1
+                newEval += 3
             }
         }
         return newEval
@@ -139,29 +139,29 @@ class ChessEngine {
     private fun rewardEarlyLightPiecesDevelopment(eval: Int, board: Board, maximizingColor: Color): Int {
         if (maximizingColor == Color.WHITE) {
             if (board.findSquare("b1")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("c1")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("f1")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("g1")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
         } else {
             if (board.findSquare("b8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("c8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("f8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
             if (board.findSquare("g8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 1
+                return eval + 2
             }
         }
         return eval
@@ -170,11 +170,12 @@ class ChessEngine {
     private fun punishEarlyQueenMoves(eval: Int, board: Board, maximizingColor: Color): Int {
         if (maximizingColor == Color.WHITE) {
             if (board.findSquare("d1")?.isEmpty() == true && board.moves.size < 8) {
-                return eval - 1
+                println("queen moved")
+                return eval - 3
             }
         } else {
             if (board.findSquare("d8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval - 1
+                return eval - 3
             }
         }
         return eval
