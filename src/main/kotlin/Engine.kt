@@ -1,8 +1,10 @@
 package adam.backend.portfolio
 
 import adam.backend.portfolio.finder.MoveFinder
+import adam.backend.portfolio.model.Bishop
 import adam.backend.portfolio.model.Board
 import adam.backend.portfolio.model.Color
+import adam.backend.portfolio.model.Knight
 import adam.backend.portfolio.model.Move
 import adam.backend.portfolio.model.Pawn
 import adam.backend.portfolio.model.Rook
@@ -17,46 +19,56 @@ class ChessEngine {
 
     fun findBestMove(board: Board, depth: Int, maximizingColor: Color): Move {
         val moveFinder = MoveFinder()
-        var maxV = Int.MIN_VALUE
         var bestMove: Move? = null
+        var alpha = Int.MIN_VALUE
+        val beta = Int.MAX_VALUE
+        
         for (move in moveFinder.findAll(board, maximizingColor)) {
             val copy = makeMove(board, move)
-            val minmaxRoot = minmax(depth - 1, copy, maximizingColor.opposite(), maximizingColor)
-            if (minmaxRoot > maxV) {
-                maxV = minmaxRoot
+            val eval = alphaBeta(depth - 1, copy, maximizingColor.opposite(), maximizingColor, alpha, beta)
+            if (eval > alpha) {
+                alpha = eval
                 bestMove = move
             }
         }
         return bestMove!!
     }
 
-    private fun minmax(depth: Int, board: Board, color: Color, maximizingColor: Color): Int {
+    private fun alphaBeta(depth: Int, board: Board, color: Color, maximizingColor: Color, alpha: Int, beta: Int): Int {
         if (depth == 0 || board.isCheckmate(Color.WHITE) || board.isCheckmate(Color.BLACK) || board.isDraw()) {
-            val score = evaluate(board, maximizingColor, depth)
-            return score
+            return evaluate(board, maximizingColor, depth)
         }
 
         val allMoves = MoveFinder().findAll(board, color)
-        var bestEval = if (color == maximizingColor) Int.MIN_VALUE else Int.MAX_VALUE
+        var currentAlpha = alpha
+        var currentBeta = beta
 
-        for (m in allMoves) {
-            val copy = makeMove(board, m)
-            val eval = minmax(depth - 1, copy, color.opposite(), maximizingColor)
-
-            if (color == maximizingColor) {
-                if (eval > bestEval) {
-                    bestEval = eval
-                }
-            } else {
-                if (eval < bestEval) {
-                    bestEval = eval
+        if (color == maximizingColor) {
+            var maxEval = Int.MIN_VALUE
+            for (m in allMoves) {
+                val copy = makeMove(board, m)
+                val eval = alphaBeta(depth - 1, copy, color.opposite(), maximizingColor, currentAlpha, currentBeta)
+                maxEval = maxOf(maxEval, eval)
+                currentAlpha = maxOf(currentAlpha, eval)
+                if (currentBeta <= currentAlpha) {
+                    break // Beta cutoff
                 }
             }
+            return maxEval
+        } else {
+            var minEval = Int.MAX_VALUE
+            for (m in allMoves) {
+                val copy = makeMove(board, m)
+                val eval = alphaBeta(depth - 1, copy, color.opposite(), maximizingColor, currentAlpha, currentBeta)
+                minEval = minOf(minEval, eval)
+                currentBeta = minOf(currentBeta, eval)
+                if (currentBeta <= currentAlpha) {
+                    break // Alpha cutoff
+                }
+            }
+            return minEval
         }
-
-        return bestEval
     }
-
 
     private fun makeMove(board: Board, move: Move): Board {
         val copy = board.copy()
@@ -107,21 +119,6 @@ class ChessEngine {
             }
         }
 
-        val whiteKing = board.findKing(Color.WHITE) ?: return eval
-        val blackKing = board.findKing(Color.BLACK) ?: return eval
-
-        if (board.isAttacked(whiteKing, Color.BLACK)) {
-            eval -= 10
-        }
-        if (board.isAttacked(blackKing, Color.WHITE)) {
-            eval += 10
-        }
-
-        eval = addForCastling(eval, board, maximizingColor)
-        eval = punishEarlyQueenMoves(eval, board, maximizingColor)
-        eval = rewardEarlyLightPiecesDevelopment(eval, board, maximizingColor)
-        eval = rewardCenterTakeOvers(eval, board, maximizingColor)
-
         return if (maximizingColor == Color.WHITE) eval else -eval
     }
 
@@ -151,17 +148,17 @@ class ChessEngine {
                 return eval + 2
             }
         } else {
-            if (board.findSquare("b8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 2
+            if (board.findSquare("b8")?.piece != Knight(Color.BLACK) && board.moves.size < 10) {
+                return eval + 5
             }
-            if (board.findSquare("c8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 2
+            if (board.findSquare("c8")?.piece != Knight(Color.BLACK) && board.moves.size < 10) {
+                return eval + 5
             }
-            if (board.findSquare("f8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 2
+            if (board.findSquare("f8")?.piece != Bishop(Color.BLACK) && board.moves.size < 8) {
+                return eval + 5
             }
-            if (board.findSquare("g8")?.isEmpty() == true && board.moves.size < 8) {
-                return eval + 2
+            if (board.findSquare("g8")?.piece != Knight(Color.BLACK) && board.moves.size < 10) {
+                return eval + 5
             }
         }
         return eval
@@ -170,7 +167,6 @@ class ChessEngine {
     private fun punishEarlyQueenMoves(eval: Int, board: Board, maximizingColor: Color): Int {
         if (maximizingColor == Color.WHITE) {
             if (board.findSquare("d1")?.isEmpty() == true && board.moves.size < 8) {
-                println("queen moved")
                 return eval - 3
             }
         } else {

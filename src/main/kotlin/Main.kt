@@ -39,7 +39,7 @@ private fun runAgainstMe(myColor: Color) {
 }
 
 private fun engineMove(chessEngine: ChessEngine, board: Board, myColor: Color) {
-    val engineMove = chessEngine.findBestMove(board, 3, myColor)
+    val engineMove = chessEngine.findBestMove(board, 8, myColor)
     board.move(Move(engineMove.value))
     println("Engine move: $engineMove")
     printBoard(board)
@@ -66,7 +66,7 @@ fun runAgainstRandom(): String {
                 val moveFinder = MoveFinder()
                 moveFinder.findAll(board, turn).random()
             } else {
-                chesEngine.findBestMove(board, 2, Color.WHITE)
+                chesEngine.findBestMove(board, 4, Color.WHITE)
             }
 
         board.move(move)

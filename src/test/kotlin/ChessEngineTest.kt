@@ -18,34 +18,17 @@ import kotlin.test.assertTrue
 class ChessEngineTest {
 
     @Test
-    fun should_punish_early_queen_moves() {
+    fun should_evalute_material() {
         val chesEngine = ChessEngine()
         val b = Board()
+        b.clear()
 
-        b.move(Move("e2e3"))//w
-        b.move(Move("e7e5"))//b
-        b.move(Move("d1e2"))//w
+        b.put("a1", King(Color.WHITE))
+        b.put("a8", King(Color.BLACK))
 
-        val evaluate = chesEngine.evaluate(b, maximizingColor = Color.WHITE, 3)
-        assertEquals(expected = -2, actual = evaluate)
-    }
+        val eval = chesEngine.evaluate(b, Color.WHITE, 0)
 
-    @Test
-    fun should_evaluate_castled_king() {
-        val chesEngine = ChessEngine()
-        val b = Board()
-
-        b.move(Move("e2e4"))//w
-        b.move(Move("e7e5"))//b
-        b.move(Move("f1e2"))//w
-        b.move(Move("f8e7"))//b
-        b.move(Move("g1f3"))//w
-        b.move(Move("a7a6"))//b
-        b.move(Move("O-O"))//w
-
-        printBoard(b)
-
-        assertEquals(actual = chesEngine.evaluate(b, Color.WHITE, 1), expected = 10)
+        assertEquals(actual = eval, expected = 0)
     }
 
     @Test
