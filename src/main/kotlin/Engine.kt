@@ -11,6 +11,82 @@ import adam.backend.portfolio.model.Rook
 import adam.backend.portfolio.model.Square
 
 class ChessEngine {
+    // Cache material weights as constants
+    private companion object {
+        const val QUEEN_VALUE = 90
+        const val KING_VALUE = 10000
+        const val ROOK_VALUE = 50
+        const val BISHOP_VALUE = 30
+        const val KNIGHT_VALUE = 30
+        const val PAWN_VALUE = 10
+
+        // Piece-square tables for positional evaluation
+        private val PAWN_SQUARE_TABLE = intArrayOf(
+            0,  0,  0,  0,  0,  0,  0,  0,
+            50, 50, 50, 50, 50, 50, 50, 50,
+            10, 10, 20, 30, 30, 20, 10, 10,
+            5,  5, 10, 25, 25, 10,  5,  5,
+            0,  0,  0, 20, 20,  0,  0,  0,
+            5, -5,-10,  0,  0,-10, -5,  5,
+            5, 10, 10,-20,-20, 10, 10,  5,
+            0,  0,  0,  0,  0,  0,  0,  0
+        )
+
+        private val KNIGHT_SQUARE_TABLE = intArrayOf(
+            -50,-40,-30,-30,-30,-30,-40,-50,
+            -40,-20,  0,  0,  0,  0,-20,-40,
+            -30,  0, 10, 15, 15, 10,  0,-30,
+            -30,  5, 15, 20, 20, 15,  5,-30,
+            -30,  0, 15, 20, 20, 15,  0,-30,
+            -30,  5, 10, 15, 15, 10,  5,-30,
+            -40,-20,  0,  5,  5,  0,-20,-40,
+            -50,-40,-30,-30,-30,-30,-40,-50
+        )
+
+        private val BISHOP_SQUARE_TABLE = intArrayOf(
+            -20,-10,-10,-10,-10,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5, 10, 10,  5,  0,-10,
+            -10,  5,  5, 10, 10,  5,  5,-10,
+            -10,  0, 10, 10, 10, 10,  0,-10,
+            -10, 10, 10, 10, 10, 10, 10,-10,
+            -10,  5,  0,  0,  0,  0,  5,-10,
+            -20,-10,-10,-10,-10,-10,-10,-20
+        )
+
+        private val ROOK_SQUARE_TABLE = intArrayOf(
+            0,  0,  0,  0,  0,  0,  0,  0,
+            5, 10, 10, 10, 10, 10, 10,  5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,
+            0,  0,  0,  5,  5,  0,  0,  0
+        )
+
+        private val QUEEN_SQUARE_TABLE = intArrayOf(
+            -20,-10,-10, -5, -5,-10,-10,-20,
+            -10,  0,  0,  0,  0,  0,  0,-10,
+            -10,  0,  5,  5,  5,  5,  0,-10,
+            -5,  0,  5,  5,  5,  5,  0, -5,
+            0,  0,  5,  5,  5,  5,  0, -5,
+            -10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,
+            -20,-10,-10, -5, -5,-10,-10,-20
+        )
+
+        private val KING_SQUARE_TABLE = intArrayOf(
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,
+            -20,-30,-30,-40,-40,-30,-30,-20,
+            -10,-20,-20,-20,-20,-20,-20,-10,
+            20, 20,  0,  0,  0,  0, 20, 20,
+            20, 30, 10,  0,  0, 10, 30, 20
+        )
+    }
 
     private val materialWeightMap: Map<String, Int>
         get() = mapOf(
@@ -81,43 +157,51 @@ class ChessEngine {
     }
 
     fun evaluate(board: Board, maximizingColor: Color, depth: Int): Int {
+        var whiteScore = 0
+        var blackScore = 0
 
-        // get all white pieces and sum the values
-        val whiteScore = board.board
-            .asSequence().flatten()
-            .mapNotNull { it.piece }
-            .filter { it.getColor() == Color.WHITE }
-            .map { materialWeightMap[it.getSymbol()]!! }
-            .sum()
+        // Single pass evaluation of all pieces
+        for (row in 0..7) {
+            for (col in 0..7) {
+                val square = board.board[row][col]
+                val piece = square.piece ?: continue
+                
+                val materialValue = when (piece.getSymbol()) {
+                    "Q" -> QUEEN_VALUE
+                    "K" -> KING_VALUE
+                    "R" -> ROOK_VALUE
+                    "B" -> BISHOP_VALUE
+                    "N" -> KNIGHT_VALUE
+                    "p" -> PAWN_VALUE
+                    else -> 0
+                }
 
-        // get all black pieces and sum the values
-        val blackScore = board.board
-            .asSequence().flatten()
-            .mapNotNull { it.piece }
-            .filter { it.getColor() == Color.BLACK }
-            .map { materialWeightMap[it.getSymbol()]!! }
-            .sum()
+                val positionValue = when (piece.getSymbol()) {
+                    "p" -> PAWN_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    "N" -> KNIGHT_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    "B" -> BISHOP_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    "R" -> ROOK_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    "Q" -> QUEEN_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    "K" -> KING_SQUARE_TABLE[if (piece.getColor() == Color.WHITE) row * 8 + col else (7 - row) * 8 + col]
+                    else -> 0
+                }
 
-        // calculate the difference if white 10 and black 11 score = -1
-        var eval = whiteScore - blackScore
+                if (piece.getColor() == Color.WHITE) {
+                    whiteScore += materialValue + positionValue
+                } else {
+                    blackScore += materialValue + positionValue
+                }
+            }
+        }
 
-        // if white is checkmated
         if (board.isCheckmate(Color.WHITE)) {
-            return if (maximizingColor == Color.WHITE) {
-                -10_000 + depth // white lost, return min value
-            } else {
-                10_000 - depth // white won return max value
-            }
+            return if (maximizingColor == Color.WHITE) -10_000 + depth else 10_000 - depth
+        }
+        if (board.isCheckmate(Color.BLACK)) {
+            return if (maximizingColor == Color.BLACK) -10_000 + depth else 10_000 - depth
         }
 
-        // if black is checkmated
-        if (board.isCheckmate(Color.BLACK)) {
-            return if (maximizingColor == Color.BLACK) {
-                -10_000 + depth // black lost return min value
-            } else {
-                10_000 - depth // black won return max value
-            }
-        }
+        var eval = whiteScore - blackScore
 
         return if (maximizingColor == Color.WHITE) eval else -eval
     }

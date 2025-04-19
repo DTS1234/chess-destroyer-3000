@@ -66,7 +66,7 @@ fun runAgainstRandom(): String {
                 val moveFinder = MoveFinder()
                 moveFinder.findAll(board, turn).random()
             } else {
-                chesEngine.findBestMove(board, 4, Color.WHITE)
+                chesEngine.findBestMove(board, 5, Color.WHITE)
             }
 
         board.move(move)
